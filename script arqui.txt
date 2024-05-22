@@ -1,0 +1,51 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+
+# Crear la sesión de Spark con más memoria asignada y configuraciones adicionales
+spark = SparkSession.builder \
+    .appName("TuApp") \
+    .config("spark.driver.memory", "8g") \
+    .config("spark.executor.memory", "8g") \
+    .config("spark.sql.shuffle.partitions", "200") \
+    .config("spark.sql.streaming.forceDeleteTempCheckpointLocation", "true") \
+    .config("spark.memory.fraction", "0.8") \
+    .config("spark.memory.storageFraction", "0.2") \
+    .getOrCreate()
+
+
+# Define the schema to speed up processing
+csvSchema = StructType([ 
+    StructField("season", IntegerType(), True),
+    StructField("date", TimestampType(), True),
+    StructField("home_team_abbr", StringType(), True),
+    StructField("away_team_abbr", StringType(), True),
+    StructField("home_team_pregame_rating", FloatType(), True),
+    StructField("away_team_pregame_rating", FloatType(), True),
+    StructField("home_team_winprob", FloatType(), True),
+    StructField("away_team_winprob", FloatType(), True),
+    StructField("overtime_prob", FloatType(), True),
+    StructField("home_team_expected_points", FloatType(), True),
+    StructField("away_team_expected_points", FloatType(), True),
+    # StructField("home_team_score", IntegerType(), True),
+    # StructField("away_team_score", IntegerType(), True),
+    # StructField("home_team_postgame_rating", IntegerType(), True),
+    # StructField("away_team_postgame_rating", IntegerType(), True),
+    # StructField("game_quality_rating", IntegerType(), True),
+    # StructField("game_importance_rating", IntegerType(), True),
+    # StructField("game_overall_rating", IntegerType(), True)
+    StructField("home_team_won", IntegerType(),True),
+    StructField("decade", IntegerType(), True)
+])
+
+# Configurar el DataFrame de entrada de streaming
+inputPath = "/Users/aldoe/Documents/Github/Arquitectura/datos/HockeyTimeline"
+
+streamingInputDF = (
+    spark
+        .readStream
+        .schema(csvSchema)
+        .option("maxFilesPerTrigger", 1)
+        .option("header", "true")
+        .format("csv")
+        .load(inputPath)
+)
